@@ -10,11 +10,10 @@ TinyGPSPlus gps;
 SoftwareSerial SerialGPS(4,5); 
 
 bool debug = true;
+
 WiFiManager wifiManager;
 WiFiClient wifiClient;
-
 MqttClient mqttClient(wifiClient);
-
 
 const char broker[] = "broker.hivemq.com"; //"test.mosquitto.org";
 int        port     = 1883;
@@ -89,9 +88,7 @@ void setup() {
 }
 
 
-String myInput  = "";
-StaticJsonDocument<2000> doc;
-        
+String myInput  = "", speedStr = "", latStr = "", lngStr ="";
 void loop() {
   wifi_reconnect();
   mqttClient.poll();
@@ -102,16 +99,21 @@ void loop() {
       
       if (gps.location.isUpdated()) {
         myInput  = "";
+        StaticJsonDocument<2000> doc;
         
         doc["devId"] = myMacAdr;
         doc["latitude"] = gps.location.lat();
         doc["longitude"] = gps.location.lng();
         doc["speed"] = gps.speed.kmph();
 
-        doc["tstamp"] = String(gps.date.year())+"-" + String(gps.date.month()) + "-" + String(gps.date.day())
-        + " " + String(gps.time.hour()+2) + ":" + String(gps.time.minute()) + ":" + String(gps.time.second());
-        
-        
+        speedStr = String(doc["speed"]);
+        latStr = String(doc["latitude"]);
+        lngStr = String(doc["longitude"]);
+
+        //yyyy-mm-dd hh:mm:ss
+        char buffer[19];
+        sprintf(buffer, "%d-%02d-%02d %02d:%02d:%02d", gps.date.year(), gps.date.month(),gps.date.day(),gps.time.hour()+2, gps.time.minute(), gps.time.second());
+        doc["tstamp"] = String(buffer);        
         serializeJson(doc, myInput);
       }
   }
@@ -136,19 +138,15 @@ void loop() {
       mqttClient.endMessage();
     
       //in addition plain values without json
-      
       mqttClient.beginMessage(topic_str + "/"+ myMacAdr + "/value");
-      String speedStr = doc["speed"];
       mqttClient.print(speedStr);
       mqttClient.endMessage();
 
       mqttClient.beginMessage(topic_str + "/"+ myMacAdr + "/latitude");
-      String latStr = doc["latitude"];
       mqttClient.print(latStr);
       mqttClient.endMessage();
       
       mqttClient.beginMessage(topic_str + "/"+ myMacAdr + "/longitude");
-      String lngStr = doc["longitude"];
       mqttClient.print(lngStr);
       mqttClient.endMessage();
     }
