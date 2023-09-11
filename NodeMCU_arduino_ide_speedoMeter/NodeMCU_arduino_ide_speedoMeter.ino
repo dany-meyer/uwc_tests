@@ -6,7 +6,10 @@
 #include <SoftwareSerial.h>
 
 TinyGPSPlus gps;
-/* TX --> D2, RX --> D1*/
+// TX --> D2, RX --> D1
+// see the pinout for the NodeMCU 12 to find the mapping between the GPIO's and the pins on the board:
+// https://randomnerdtutorials.com/esp8266-pinout-reference-gpios/
+
 SoftwareSerial SerialGPS(4,5); 
 
 bool debug = true;
